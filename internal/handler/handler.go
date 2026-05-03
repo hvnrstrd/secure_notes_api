@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -9,10 +10,10 @@ import (
 )
 
 type Handler struct {
-	storage *storage.Storage
+	storage storage.Storage
 }
 
-func New(s *storage.Storage) *Handler {
+func New(s storage.Storage) *Handler {
 	return &Handler{storage: s}
 }
 
@@ -37,7 +38,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
-	notes := h.storage.GetAll()
+	notes, err := h.storage.GetAll()
+	if err != nil {
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		return
+	}
 	if err := json.NewEncoder(w).Encode(notes); err != nil {
 		http.Error(w, `{"error":"encoding failed"}`, http.StatusInternalServerError)
 	}
@@ -52,7 +57,11 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
 		return
 	}
-	note := h.storage.Create(body.Title, body.Body)
+	note, err := h.storage.Create(body.Title, body.Body)
+	if err != nil {
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(note); err != nil {
 		http.Error(w, `{"error":"encoding failed"}`, http.StatusInternalServerError)
@@ -61,8 +70,12 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getByID(w http.ResponseWriter, r *http.Request, id string) {
 	note, err := h.storage.GetByID(id)
-	if err != nil {
+	if err == sql.ErrNoRows {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
 	if err := json.NewEncoder(w).Encode(note); err != nil {
@@ -71,8 +84,11 @@ func (h *Handler) getByID(w http.ResponseWriter, r *http.Request, id string) {
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request, id string) {
-	if err := h.storage.Delete(id); err != nil {
+	if err := h.storage.Delete(id); err == sql.ErrNoRows {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
