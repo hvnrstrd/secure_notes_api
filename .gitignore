@@ -1,0 +1,14 @@
+# binaries
+secure_notes_api
+*.exe
+
+# env files
+.env
+*.env
+
+# Go
+vendor/
+
+# IDE
+.vscode/
+.idea/
