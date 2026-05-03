@@ -52,3 +52,11 @@ curl http://localhost:8080/notes
 # Delete a note
 curl -X DELETE http://localhost:8080/notes/{id}
 ```
+
+## Architecture decisions
+
+- **Non-root Docker user** — container runs as `appuser`, not root
+- **Multi-stage build** — final image contains only the binary, not Go toolchain (~10MB vs ~300MB)
+- **Server timeouts** — prevents slowloris attacks (`ReadTimeout`, `WriteTimeout`, `IdleTimeout`)
+- **Storage interface** — handler doesn't know about PostgreSQL directly, easy to swap implementations
+- **Health check** — API waits for PostgreSQL to be healthy before starting
