@@ -31,13 +31,15 @@ func main() {
 
 	h := handler.New(db)
 
-	http.HandleFunc("/auth/register", h.Register)
-	http.HandleFunc("/auth/login", h.Login)
-	http.Handle("/notes", h.AuthMiddleware(h.ServeHTTP))
-	http.Handle("/notes/", h.AuthMiddleware(h.ServeHTTP))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/auth/register", h.Register)
+	mux.HandleFunc("/auth/login", h.Login)
+	mux.Handle("/notes", h.AuthMiddleware(h.ServeHTTP))
+	mux.Handle("/notes/", h.AuthMiddleware(h.ServeHTTP))
 
 	srv := &http.Server{
 		Addr:         ":8080",
+		Handler:      handler.CORSMiddleware(mux),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
