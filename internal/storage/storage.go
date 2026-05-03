@@ -7,4 +7,6 @@ type Storage interface {
 	GetAll() ([]model.Note, error)
 	GetByID(id string) (model.Note, error)
 	Delete(id string) error
+	CreateUser(email, password string) (model.User, error)
+	GetUserByEmail(email string) (model.User, string, error)
 }

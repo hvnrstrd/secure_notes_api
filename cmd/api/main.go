@@ -22,13 +22,19 @@ func main() {
 	}
 
 	if err := db.Migrate(); err != nil {
-		log.Fatalf("failed to migrate: %v", err)
+		log.Fatalf("failed to migrate notes: %v", err)
+	}
+
+	if err := db.MigrateUsers(); err != nil {
+		log.Fatalf("failed to migrate users: %v", err)
 	}
 
 	h := handler.New(db)
 
-	http.Handle("/notes", h)
-	http.Handle("/notes/", h)
+	http.HandleFunc("/auth/register", h.Register)
+	http.HandleFunc("/auth/login", h.Login)
+	http.Handle("/notes", h.AuthMiddleware(h.ServeHTTP))
+	http.Handle("/notes/", h.AuthMiddleware(h.ServeHTTP))
 
 	srv := &http.Server{
 		Addr:         ":8080",
