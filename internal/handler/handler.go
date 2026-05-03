@@ -38,7 +38,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
-	notes, err := h.storage.GetAll()
+	userID := r.Context().Value(UserIDKey).(string)
+	notes, err := h.storage.GetAll(userID)
 	if err != nil {
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
@@ -49,6 +50,7 @@ func (h *Handler) getAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(string)
 	var body struct {
 		Title string `json:"title"`
 		Body  string `json:"body"`
@@ -57,7 +59,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid body"}`, http.StatusBadRequest)
 		return
 	}
-	note, err := h.storage.Create(body.Title, body.Body)
+	note, err := h.storage.Create(userID, body.Title, body.Body)
 	if err != nil {
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
@@ -69,7 +71,8 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getByID(w http.ResponseWriter, r *http.Request, id string) {
-	note, err := h.storage.GetByID(id)
+	userID := r.Context().Value(UserIDKey).(string)
+	note, err := h.storage.GetByID(userID, id)
 	if err == sql.ErrNoRows {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 		return
@@ -84,7 +87,8 @@ func (h *Handler) getByID(w http.ResponseWriter, r *http.Request, id string) {
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request, id string) {
-	if err := h.storage.Delete(id); err == sql.ErrNoRows {
+	userID := r.Context().Value(UserIDKey).(string)
+	if err := h.storage.Delete(userID, id); err == sql.ErrNoRows {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 		return
 	} else if err != nil {
