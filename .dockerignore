@@ -1,0 +1,7 @@
+cat > .dockerignore << 'EOF'
+.git
+*.md
+.gitignore
+.env
+*.swp
+EOF
